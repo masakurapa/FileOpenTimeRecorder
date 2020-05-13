@@ -1,8 +1,13 @@
 {
-	"name": "fileopenrecorder",
-	"displayName": "FileOpenRecorder",
-	"description": "recording file open times",
-	"version": "0.0.1",
+	"name": "file-open-time-recorder",
+	"publisher": "masakurapa",
+	"displayName": "FileOpenTimeRecorder",
+	"description": "recording the number of seconds a file is open and write result to json file",
+	"version": "0.1.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/masakurapa/FileOpenTimeRecorder"
+	},
 	"engines": {
 		"vscode": "^1.45.0"
 	},
@@ -10,33 +15,33 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:fileopenrecorder.start",
-		"onCommand:fileopenrecorder.stop"
+		"onCommand:fileOpenTimeRecorder.start",
+		"onCommand:fileOpenTimeRecorder.stop"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "fileopenrecorder.start",
-				"title": "FileOpenRecorder: Start Recoding"
+				"command": "fileOpenTimeRecorder.start",
+				"title": "FileOpenTimeRecorder: Start Recoding"
 			},
 			{
-				"command": "fileopenrecorder.stop",
-				"title": "FileOpenRecorder: Stop Recoding"
+				"command": "fileOpenTimeRecorder.stop",
+				"title": "FileOpenTimeRecorder: Stop Recoding"
 			}
 		],
-		"configuration":[
+		"configuration": [
 			{
 				"title": "Aggregation Directories",
 				"properties": {
-					"fileopenrecorder.aggrigationDirectories": {
+					"fileOpenTimeRecorder.aggrigationDirectories": {
 						"type": "array",
 						"default": [],
 						"description": "relative path from root paths",
 						"scope": "window"
 					}
 				}
-			},
+			}
 		]
 	},
 	"scripts": {

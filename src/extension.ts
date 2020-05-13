@@ -3,7 +3,7 @@ import * as fs from 'fs';
 
 const INACTIVE = 'other files';
 const rootPath = vscode.workspace.rootPath ? `${vscode.workspace.rootPath}/` : '/';
-const outputPath = `${rootPath}/.fileopenrecorder`;
+const outputPath = `${rootPath}/.fileOpenTimeRecorder`;
 
 let files: {[key: string]: number} = {};
 
@@ -14,13 +14,13 @@ export function activate(context: vscode.ExtensionContext) {
 	const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0);
 
 	context.subscriptions.push(vscode.commands.registerCommand(
-		'fileopenrecorder.stopConfirm',
+		'fileOpenTimeRecorder.stopConfirm',
 		() => {
 			vscode.window.showQuickPick(['No', 'Yes'], {
 				placeHolder: 'Are you sure you want to stop recording?',
 				onDidSelectItem: (val: string) => {
 					if (val === 'Yes') {
-						vscode.commands.executeCommand('fileopenrecorder.stop');
+						vscode.commands.executeCommand('fileOpenTimeRecorder.stop');
 					}
 				},
 			});
@@ -28,15 +28,15 @@ export function activate(context: vscode.ExtensionContext) {
 	));
 
 	context.subscriptions.push(vscode.commands.registerCommand(
-		'fileopenrecorder.start',
+		'fileOpenTimeRecorder.start',
 		() => {
 			if (currentFile !== '') {
 				vscode.window.showInformationMessage('recording has already started');
 				return;
 			}
 
-			item.text = 'FileOpenRecorder: Stop Recoding';
-			item.command = 'fileopenrecorder.stopConfirm';
+			item.text = 'FileOpenTimeRecorder: Stop Recoding';
+			item.command = 'fileOpenTimeRecorder.stopConfirm';
 			item.show();
 
 			const editor = vscode.window.activeTextEditor;
@@ -64,7 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
 	));
 
 	context.subscriptions.push(vscode.commands.registerCommand(
-		'fileopenrecorder.stop',
+		'fileOpenTimeRecorder.stop',
 		() => {
 			if (currentFile === '') {
 				vscode.window.showInformationMessage('recording has not started');
@@ -139,7 +139,7 @@ const writeResult = (): void => {
 // aggregate recording result and write to file
 // skip aggregation if configuration is empty
 const writeAggregateResult = (outputBasePath: string): void => {
-	const config = vscode.workspace.getConfiguration('fileopenrecorder');
+	const config = vscode.workspace.getConfiguration('fileOpenTimeRecorder');
 	const dirs = config.get<Array<string>>('aggrigationDirectories');
 	if (dirs === undefined || dirs.length === 0) {
 		return;
