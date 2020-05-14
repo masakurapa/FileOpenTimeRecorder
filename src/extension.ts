@@ -139,15 +139,24 @@ const writeResult = (): void => {
 };
 
 // aggregate recording result and write to file
-// skip aggregation if configuration is empty
 const writeAggregateResult = (outputBasePath: string): void => {
+	const outFile = `${outputBasePath}/aggregate.json`;
+	const aggregated: FileTime = {};
+
+	// calc total seconds
+	let total = 0;
+	for (const f in files) {
+		total += files[f];
+	}
+	aggregated['total'] = total;
+
 	const config = vscode.workspace.getConfiguration('fileOpenTimeRecorder');
 	const dirs = config.get<Array<string>>('aggrigationDirectories');
 	if (dirs === undefined || dirs.length === 0) {
+		fs.writeFileSync(outFile, toJSON(aggregated), 'utf-8');
 		return;
 	}
 
-	const aggregated: FileTime = {};
 	for (const dir of dirs) {
 		let d = dir;
 		// remove './' from prefix
@@ -168,7 +177,7 @@ const writeAggregateResult = (outputBasePath: string): void => {
 		}
 	}
 
-	fs.writeFileSync(`${outputBasePath}/aggregate.json`, toJSON(aggregated), 'utf-8');
+	fs.writeFileSync(outFile, toJSON(aggregated), 'utf-8');
 };
 
 const toJSON = (obj: FileTime): string => {
