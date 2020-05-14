@@ -39,6 +39,12 @@
 						"default": [],
 						"description": "relative path from root paths",
 						"scope": "window"
+					},
+					"fileOpenTimeRecorder.outputDirectory": {
+						"type": "string",
+						"default": "",
+						"description": "directory to output results. if the value is empty, output to ${WORKSPACE}/.fileOpenRecorder",
+						"scope": "window"
 					}
 				}
 			}

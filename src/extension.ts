@@ -4,8 +4,10 @@ import * as fs from 'fs';
 interface FileTime {[key: string]: number};
 
 const INACTIVE = 'other files';
-const rootPath = vscode.workspace.rootPath ? `${vscode.workspace.rootPath}/` : '/';
-const outputPath = `${rootPath}/.fileOpenTimeRecorder`;
+const WORKSPACE_ROOT_PATH = vscode.workspace.rootPath ? `${vscode.workspace.rootPath}/` : '/';
+const DEFAULT_OUTPUT_PATH = `${WORKSPACE_ROOT_PATH}/.fileOpenTimeRecorder`;
+
+const config = vscode.workspace.getConfiguration('fileOpenTimeRecorder');
 
 let files: FileTime = {};
 
@@ -43,7 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 			const editor = vscode.window.activeTextEditor;
 			const file = editor === undefined ?
-				INACTIVE : editor.document.uri.path.replace(rootPath, '');
+				INACTIVE : editor.document.uri.path.replace(WORKSPACE_ROOT_PATH, '');
 			files[file] = 0;
 
 			currentFile = file;
@@ -53,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 				fixCurrentFileTime();
 
 				const f = e === undefined ?
-					INACTIVE : e.document.uri.path.replace(rootPath, '');
+					INACTIVE : e.document.uri.path.replace(WORKSPACE_ROOT_PATH, '');
 
 				if (files[f] === undefined) {
 					files[f] = 0;
@@ -121,17 +123,23 @@ const formattedDate = (): string => {
 const writeResult = (): void => {
 	fixCurrentFileTime();
 
-	// create output directory and .gitignore
-	if (!fs.existsSync(outputPath)) {
-		fs.mkdirSync(outputPath);
+	const outputDirectory = config.get<string>('outputDirectory');
+	let output = DEFAULT_OUTPUT_PATH;
+	if (outputDirectory !== undefined && outputDirectory.trim().length > 0) {
+		 output = outputDirectory.trim();
 	}
 
-	const baseDir = `${outputPath}/${formattedDate()}`;
+	// create output directory and .gitignore
+	if (!fs.existsSync(output)) {
+		fs.mkdirSync(output);
+	}
+
+	const baseDir = `${output}/${formattedDate()}`;
 	if (!fs.existsSync(baseDir)) {
 		fs.mkdirSync(baseDir);
 	}
 
-	fs.writeFileSync(`${outputPath}/.gitignore`, '*', 'utf-8');
+	fs.writeFileSync(`${output}/.gitignore`, '*', 'utf-8');
 
 	// write recording result
 	fs.writeFileSync(`${baseDir}/all_files.json`, toJSON(files), 'utf-8');
@@ -150,7 +158,6 @@ const writeAggregateResult = (outputBasePath: string): void => {
 	}
 	aggregated['total'] = total;
 
-	const config = vscode.workspace.getConfiguration('fileOpenTimeRecorder');
 	const dirs = config.get<Array<string>>('aggrigationDirectories');
 	if (dirs === undefined || dirs.length === 0) {
 		fs.writeFileSync(outFile, toJSON(aggregated), 'utf-8');
