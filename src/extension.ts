@@ -1,11 +1,13 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 
+interface FileTime {[key: string]: number};
+
 const INACTIVE = 'other files';
 const rootPath = vscode.workspace.rootPath ? `${vscode.workspace.rootPath}/` : '/';
 const outputPath = `${rootPath}/.fileOpenTimeRecorder`;
 
-let files: {[key: string]: number} = {};
+let files: FileTime = {};
 
 let currentFile = '';
 let openedTime = 0;
@@ -132,7 +134,7 @@ const writeResult = (): void => {
 	fs.writeFileSync(`${outputPath}/.gitignore`, '*', 'utf-8');
 
 	// write recording result
-	fs.writeFileSync(`${baseDir}/all_files.json`, JSON.stringify(files), 'utf-8');
+	fs.writeFileSync(`${baseDir}/all_files.json`, toJSON(files), 'utf-8');
 	writeAggregateResult(baseDir);
 };
 
@@ -145,7 +147,7 @@ const writeAggregateResult = (outputBasePath: string): void => {
 		return;
 	}
 
-	const aggregated: {[key: string]: number} = {};
+	const aggregated: FileTime = {};
 	for (const dir of dirs) {
 		let d = dir;
 		// remove './' from prefix
@@ -166,5 +168,18 @@ const writeAggregateResult = (outputBasePath: string): void => {
 		}
 	}
 
-	fs.writeFileSync(`${outputBasePath}/aggregate.json`, JSON.stringify(aggregated), 'utf-8');
+	fs.writeFileSync(`${outputBasePath}/aggregate.json`, toJSON(aggregated), 'utf-8');
+};
+
+const toJSON = (obj: FileTime): string => {
+	const formatted: {[key: string]: string} = {};
+	for (const f in obj) {
+		const total = obj[f];
+		const hour = Math.floor(total / (60 * 60));
+		const min = Math.floor((total - (hour * 60 * 60)) / 60);
+		const sec = total - (hour * 60 * 60) - (min * 60);
+		formatted[f] = `${hour}h ${padding(min)}m ${padding(sec)}s`;
+	}
+
+	return JSON.stringify(formatted, undefined, 2);
 };
