@@ -3,7 +3,7 @@
 	"publisher": "masakurapa",
 	"displayName": "FileOpenTimeRecorder",
 	"description": "recording the number of seconds a file is open and write result to json file",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/masakurapa/FileOpenTimeRecorder"
@@ -32,7 +32,7 @@
 		],
 		"configuration": [
 			{
-				"title": "Aggregation Directories",
+				"title": "FileOpenTimeRecorder",
 				"properties": {
 					"fileOpenTimeRecorder.aggrigationDirectories": {
 						"type": "array",
