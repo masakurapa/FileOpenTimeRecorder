@@ -3,9 +3,14 @@ import * as fs from 'fs';
 
 interface FileTime {[key: string]: number};
 
+const STATUS_BAR_TEXT = 'FileOpenTimeRecorder';
 const INACTIVE = 'other files';
 const WORKSPACE_ROOT_PATH = vscode.workspace.rootPath ? `${vscode.workspace.rootPath}/` : '/';
 const DEFAULT_OUTPUT_PATH = `${WORKSPACE_ROOT_PATH}/.fileOpenTimeRecorder`;
+
+const RECORDING_STATUS_START = 0;
+const RECORDING_STATUS_PAUSE = 1;
+const RECORDING_STATUS_STOP = 2;
 
 const config = vscode.workspace.getConfiguration('fileOpenTimeRecorder');
 
@@ -13,67 +18,87 @@ let files: FileTime = {};
 
 let currentFile = '';
 let openedTime = 0;
+let recording = RECORDING_STATUS_STOP;
 
 export function activate(context: vscode.ExtensionContext) {
 	const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0);
+	item.text = 'FileOpenTimeRecorder';
+	item.command = 'fileOpenTimeRecorder.selectCommand';
+	item.show();
+
+	let disposableChangeActiveTextEditor: vscode.Disposable;
 
 	context.subscriptions.push(vscode.commands.registerCommand(
-		'fileOpenTimeRecorder.stopConfirm',
-		() => {
-			vscode.window.showQuickPick(['No', 'Yes'], {
-				placeHolder: 'Are you sure you want to stop recording?',
-				onDidSelectItem: (val: string) => {
-					if (val === 'Yes') {
-						vscode.commands.executeCommand('fileOpenTimeRecorder.stop');
-					}
-				},
+		'fileOpenTimeRecorder.selectCommand',
+		async () => {
+			const val = await vscode.window.showQuickPick(['Start', 'Pause', 'Stop'], {
+				placeHolder: 'Select Command',
 			});
+
+			if (val !== undefined) {
+				switch (val) {
+					case 'Start':
+						vscode.commands.executeCommand('fileOpenTimeRecorder.start');
+						break;
+					case 'Pause':
+						vscode.commands.executeCommand('fileOpenTimeRecorder.pause');
+						break;
+					case 'Stop':
+						vscode.commands.executeCommand('fileOpenTimeRecorder.stop');
+						break;
+				}
+			}
 		}
 	));
 
 	context.subscriptions.push(vscode.commands.registerCommand(
 		'fileOpenTimeRecorder.start',
-		() => {
-			if (currentFile !== '') {
+		async () => {
+			if (recording === RECORDING_STATUS_START) {
 				vscode.window.showInformationMessage('recording has already started');
 				return;
 			}
 
-			item.text = 'FileOpenTimeRecorder: Stop Recoding';
-			item.command = 'fileOpenTimeRecorder.stopConfirm';
-			item.show();
+			item.text = `$(debug-start) ${STATUS_BAR_TEXT}`;
+			recording = RECORDING_STATUS_START;
+			changeCurrentFile(vscode.window.activeTextEditor);
 
-			const editor = vscode.window.activeTextEditor;
-			const file = editor === undefined ?
-				INACTIVE : editor.document.uri.path.replace(WORKSPACE_ROOT_PATH, '');
-			files[file] = 0;
-
-			currentFile = file;
-			openedTime = unixtime();
-
-			vscode.window.onDidChangeActiveTextEditor((e: vscode.TextEditor|undefined) => {
-				fixCurrentFileTime();
-
-				const f = e === undefined ?
-					INACTIVE : e.document.uri.path.replace(WORKSPACE_ROOT_PATH, '');
-
-				if (files[f] === undefined) {
-					files[f] = 0;
+			disposableChangeActiveTextEditor = vscode.window.onDidChangeActiveTextEditor(
+				(editor: vscode.TextEditor|undefined) => {
+					fixCurrentFileTime();
+					changeCurrentFile(editor);
 				}
+			);
+		}
+	));
 
-				currentFile = f;
-				openedTime = unixtime();
-			});
+	context.subscriptions.push(vscode.commands.registerCommand(
+		'fileOpenTimeRecorder.pause',
+		async () => {
+			if (recording !== RECORDING_STATUS_START) {
+				vscode.window.showInformationMessage('recording has not started');
+				return;
+			}
+
+			item.text = `$(debug-pause) ${STATUS_BAR_TEXT}`;
+			recording = RECORDING_STATUS_PAUSE;
+			disposableChangeActiveTextEditor.dispose();
+
+			fixCurrentFileTime();
 		}
 	));
 
 	context.subscriptions.push(vscode.commands.registerCommand(
 		'fileOpenTimeRecorder.stop',
-		() => {
-			if (currentFile === '') {
+		async () => {
+			if (recording === RECORDING_STATUS_STOP) {
 				vscode.window.showInformationMessage('recording has not started');
 				return;
 			}
+
+			item.text = `$(debug-stop) ${STATUS_BAR_TEXT}`;
+			recording = RECORDING_STATUS_STOP;
+			disposableChangeActiveTextEditor.dispose();
 
 			writeResult();
 
@@ -81,14 +106,12 @@ export function activate(context: vscode.ExtensionContext) {
 			currentFile = '';
 			openedTime = 0;
 			files = {};
-
-			item.hide();
 		}
 	));
 }
 
 export function deactivate() {
-	if (currentFile !== '') {
+	if (recording === RECORDING_STATUS_START || recording === RECORDING_STATUS_PAUSE) {
 		writeResult();
 	}
 }
@@ -101,6 +124,18 @@ const unixtime = (): number => {
 // fixe current file time
 const fixCurrentFileTime = (): void => {
 	files[currentFile] += unixtime() - openedTime;
+};
+
+const changeCurrentFile = (editor: vscode.TextEditor|undefined): void => {
+	const file = editor === undefined ?
+		INACTIVE : editor.document.uri.path.replace(WORKSPACE_ROOT_PATH, '');
+
+	if (files[file] === undefined) {
+		files[file] = 0;
+	}
+
+	currentFile = file;
+	openedTime = unixtime();
 };
 
 // returns zero padding string

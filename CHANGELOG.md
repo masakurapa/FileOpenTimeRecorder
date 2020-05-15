@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.3.0] - 2020-05-15
+
+### Added
+- add pause command
+
 ## [0.2.0] - 2020-05-14
 
 ### Added
